@@ -1,0 +1,35 @@
+{
+  "config": {
+    "C": 4.0,
+    "gamma": 0.16,
+    "tol": 0.003,
+    "max_iter": 200000,
+    "cache_mb": 512,
+    "seed": 2026,
+    "threshold": -0.2,
+    "mi_exponent": 0.75,
+    "mi_estimator": "knn",
+    "mi_neighbors": 5,
+    "mi_seed": 42,
+    "mi_min_score": 0.002
+  },
+  "training_rows": 27373,
+  "test_rows": 6844,
+  "fit_seconds": 162.049624199979,
+  "n_iter": 43955,
+  "kkt_gap": 0.002990049899764924,
+  "n_support": 10731,
+  "python": "3.14.0",
+  "numpy": "2.5.5",
+  "pandas": "3.1.1",
+  "scipy": "1.18.1",
+  "submission_sha256": "d1f067e34756c4e311986adcc12e9618e97cacd15c9ebe30aa3913726af95cf0",
+  "baseline_threshold": -0.3,
+  "baseline_submission_sha256": "80e128ab1774a41bbb451a8fdaf163c3f1fa020a8ad3557d0b6421f4923d28a0",
+  "predictions_changed_from_baseline": 75,
+  "inputs_sha256": {
+    "train.csv": "2773be159fee45aac59b32354949d00af0badbc37c45420d5ab5dc676bbcc7ed",
+    "test.csv": "aa59d8ddeb73efea1887eb8c7611d848dff332bc4ade7258c3408cec07050610",
+    "sample_submission.csv": "be2885697720fa1c645a422510a9ca2e81f6e14cb54b6dfd8760d5c3960e1c1b"
+  }
+}
