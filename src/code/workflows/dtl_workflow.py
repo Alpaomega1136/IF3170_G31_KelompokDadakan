@@ -4,7 +4,7 @@ import pandas as pd
 
 from models.decision_tree import DecisionTreeID3
 from models.pruning import prune_reduced_error
-from models.workflow import evaluate_model, train_model
+from workflows.workflow import evaluate_model, train_model
 from preprocessing.preprocessing import create_preprocessor
 
 

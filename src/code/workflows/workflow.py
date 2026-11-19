@@ -11,8 +11,9 @@ def train_model(model, X_train, y_train):
     return model
 
 
-def evaluate_model(model, X_valid, y_valid):
-    prediction = model.predict(X_valid)
+def evaluate_model(model, X_valid, y_valid, threshold=None):
+    prediction = (model.predict(X_valid) if threshold is None else
+                  (model.decision_function(X_valid) >= threshold).astype(int))
     scores = pd.Series({
         "accuracy": accuracy_score(y_valid, prediction),
         "precision_kelas_1": precision_score(y_valid, prediction, zero_division=0),
@@ -26,10 +27,10 @@ def evaluate_model(model, X_valid, y_valid):
     return scores, matrix
 
 
-def compare_models(model_scratch, model_sklearn, X_train, y_train, X_valid, y_valid):
+def compare_models(model_scratch, model_sklearn, X_train, y_train, X_valid, y_valid, threshold=None):
     train_model(model_sklearn, X_train, y_train)
-    scratch, _ = evaluate_model(model_scratch, X_valid, y_valid)
-    sklearn, _ = evaluate_model(model_sklearn, X_valid, y_valid)
+    scratch, _ = evaluate_model(model_scratch, X_valid, y_valid, threshold=threshold)
+    sklearn, _ = evaluate_model(model_sklearn, X_valid, y_valid, threshold=threshold)
     return pd.DataFrame([scratch, sklearn], index=["from scratch", "scikit-learn"])
 
 

@@ -5,7 +5,6 @@ import numpy as np
 import pandas as pd
 from sklearn.metrics import accuracy_score, f1_score
 from sklearn.model_selection import StratifiedKFold, train_test_split
-from sklearn.tree import DecisionTreeClassifier
 
 from models.decision_tree import DecisionTreeID3
 from models.pruning import prune_macro_f1, prune_reduced_error
@@ -42,42 +41,6 @@ def _scores(y_true, prediction):
         "f1_kelas_1": f1_score(y_true, prediction, pos_label=1, zero_division=0),
         "macro_f1": f1_score(y_true, prediction, average="macro", labels=[0, 1], zero_division=0),
     }
-
-
-def compare_dtl_models(X_train, y_train, X_valid, y_valid, max_depth=16,
-                       min_samples_split=10, min_samples_leaf=1, seed=42):
-    """Compare ID3, pruning methods, and sklearn on the same holdout split.
-
-    Pass raw feature DataFrames without the ID and target columns. The same
-    growth data and preprocessor are used for all models; pruning uses a
-    separate part of X_train and the validation data is used only for scoring.
-    """
-    _validate_data(X_train, y_train)
-    _validate_data(X_valid, y_valid)
-    grow, pruning, valid, y_grow, y_prune = _split_and_prepare(
-        X_train, y_train, X_valid, seed
-    )
-    params = {
-        "max_depth": max_depth,
-        "min_samples_split": min_samples_split,
-        "min_samples_leaf": min_samples_leaf,
-    }
-    scratch = DecisionTreeID3(**params).fit(grow, y_grow)
-    accuracy_tree = prune_reduced_error(deepcopy(scratch), pruning, y_prune)
-    macro_tree = prune_macro_f1(deepcopy(scratch), pruning, y_prune)
-    sklearn_tree = DecisionTreeClassifier(
-        criterion="entropy", random_state=seed, **params
-    ).fit(grow, y_grow)
-    models = [
-        ("ID3 tanpa pruning", scratch),
-        ("ID3 pruning accuracy", accuracy_tree),
-        ("ID3 pruning macro F1", macro_tree),
-        ("scikit-learn entropy", sklearn_tree),
-    ]
-    return pd.DataFrame([
-        {"model": name, **_scores(y_valid, model.predict(valid))}
-        for name, model in models
-    ]).set_index("model")
 
 
 def tune_dtl(X, y, depths=(14, 15, 16), min_splits=(2, 10),
