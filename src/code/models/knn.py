@@ -2,9 +2,16 @@ import numpy as np
 from collections import Counter
 
 class KNNFromScratch:
-    def __init__(self, k=5, metric='euclidean'):
+    def __init__(self, k=5, metric='euclidean', weights='uniform'):
+        if not isinstance(k, int) or k < 1:
+            raise ValueError('k must be a positive integer')
+        if metric not in ('euclidean', 'manhattan'):
+            raise ValueError('metric must be euclidean or manhattan')
+        if weights not in ('uniform', 'distance'):
+            raise ValueError('weights must be uniform or distance')
         self.k = k
         self.metric = metric
+        self.weights = weights
 
     def fit(self, X_train, y_train):
         self.X_train = np.array(X_train)
@@ -23,5 +30,12 @@ class KNNFromScratch:
 
         indeks_k_plg_dekat = np.argsort(jarakk)[:self.k]
         label_k_plg_dekat = [self.y_train[i] for i in indeks_k_plg_dekat]
+        if getattr(self, 'weights', 'uniform') == 'distance':
+            jarak_terdekat = jarakk[indeks_k_plg_dekat]
+            nol = jarak_terdekat == 0
+            bobot = nol.astype(float) if nol.any() else 1 / jarak_terdekat
+            nilai = np.unique(label_k_plg_dekat)
+            total = [bobot[np.asarray(label_k_plg_dekat) == label].sum() for label in nilai]
+            return nilai[np.argmax(total)]
         suara_plg_banyak = Counter(label_k_plg_dekat).most_common(1)
         return suara_plg_banyak[0][0]
