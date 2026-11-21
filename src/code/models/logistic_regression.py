@@ -4,12 +4,16 @@ import numpy as np
 
 class LogisticRegression:
     def __init__(self, penalty=None, lam=0.01, l1_ratio=0.5, lr=0.1,
-                 n_epoch=50, batch_size=1, tol=1e-6, random_state=42):
+                 n_epoch=50, batch_size=1, tol=1e-6, random_state=42,
+                 lr_decay=0.0, threshold=0.5):
         if penalty not in (None, 'l1', 'l2', 'elasticnet'):
             raise ValueError("penalty must be None, 'l1', 'l2', or 'elasticnet'")
+        if lr <= 0 or lr_decay < 0 or not (0.0 < threshold < 1.0):
+            raise ValueError("lr must be positive, lr_decay >= 0, and 0 < threshold < 1")
         self.penalty, self.lam, self.l1_ratio = penalty, lam, l1_ratio
         self.lr, self.n_epoch, self.batch_size = lr, n_epoch, batch_size
         self.tol, self.random_state = tol, random_state
+        self.lr_decay, self.threshold = lr_decay, float(threshold)
         self.loss_history_ = []
 
     @staticmethod
@@ -40,19 +44,22 @@ class LogisticRegression:
         l1, l2 = lam * share_l1, lam * (1 - share_l1)
 
         self.loss_history_ = []
-        for _ in range(self.n_epoch):
+        for epoch in range(self.n_epoch):
+            lr_t = self.lr / (1.0 + self.lr_decay * epoch)
             order = rng.permutation(n)
             for s in range(0, n, self.batch_size):
                 idx = order[s:s + self.batch_size]
                 p = self._sigmoid(X[idx] @ self.b)
                 step = X[idx].T @ (y[idx] - p) / len(idx)
                 step[1:] -= l2 * self.b[1:]
-                self.b += self.lr * step
+                self.b += lr_t * step
                 if l1 > 0:
-                    self.b[1:] = np.sign(self.b[1:]) * np.maximum(np.abs(self.b[1:]) - self.lr * l1, 0.0)
+                    self.b[1:] = np.sign(self.b[1:]) * np.maximum(np.abs(self.b[1:]) - lr_t * l1, 0.0)
 
             p_all = np.clip(self._sigmoid(X @ self.b), 1e-15, 1 - 1e-15)
-            self.loss_history_.append(-np.mean(y * np.log(p_all) + (1 - y) * np.log(1 - p_all)))
+            nll = -np.mean(y * np.log(p_all) + (1 - y) * np.log(1 - p_all))
+            reg = 0.5 * l2 * np.sum(self.b[1:] ** 2) + l1 * np.sum(np.abs(self.b[1:]))
+            self.loss_history_.append(float(nll + reg))
             if len(self.loss_history_) > 1 and abs(self.loss_history_[-2] - self.loss_history_[-1]) < self.tol:
                 break
         return self
@@ -62,8 +69,9 @@ class LogisticRegression:
             raise ValueError("Fit the model before prediction")
         return self._sigmoid(self._add_bias(np.asarray(X, float)) @ self.b)
 
-    def predict(self, X, threshold=0.5):
-        return (self.predict_proba(X) >= threshold).astype(int)
+    def predict(self, X, threshold=None):
+        th = self.threshold if threshold is None else threshold
+        return (self.predict_proba(X) >= th).astype(int)
 
     def save(self, path):
         if not hasattr(self, 'b'):

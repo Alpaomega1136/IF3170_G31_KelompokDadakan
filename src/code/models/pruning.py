@@ -89,3 +89,98 @@ def prune_macro_f1(model, X, y):
 
     prune(model.tree_, np.arange(len(y)))
     return model
+
+
+def prune_cost_complexity(model, ccp_alpha):
+    """Minimal cost-complexity pruning using stored node counts.
+
+    Reference: Breiman, L., Friedman, J., Olshen, R., & Stone, C. (1984).
+    Classification and Regression Trees. Wadsworth.
+    """
+    if model.tree_ is None:
+        raise ValueError("Fit the model before pruning")
+    if ccp_alpha < 0:
+        raise ValueError("ccp_alpha must be non-negative")
+    if ccp_alpha == 0 or "counts" not in model.tree_:
+        return model
+
+    total_n = float(model.tree_["counts"].sum())
+    if total_n <= 0:
+        return model
+
+    def node_risk(node):
+        counts = node["counts"]
+        return (float(counts.sum()) / total_n) * float(model._entropy(counts))
+
+    # Cache (risk, sub_risk, n_leaves) per node, including any residual samples that stay at the parent.
+    def build_stats(node):
+        r = node_risk(node)
+        if "children" not in node:
+            node["_ccp"] = (r, r, 1)
+            return r, 1
+        sr, leaves = 0.0, 0
+        child_counts = np.zeros_like(node["counts"])
+        for child in node["children"].values():
+            child_counts = child_counts + child["counts"]
+            cr, cl = build_stats(child)
+            sr += cr
+            leaves += cl
+        residual = node["counts"] - child_counts
+        res_n = float(residual.sum())
+        if res_n > 0:
+            sr += (res_n / total_n) * float(model._entropy(residual))
+            leaves += 1
+        node["_ccp"] = (r, sr, leaves)
+        return sr, leaves
+
+    def find_weakest(node, path, best):
+        if "children" not in node:
+            return best
+        r, sr, leaves = node["_ccp"]
+        if leaves > 1:
+            alpha = (r - sr) / (leaves - 1)
+            if best is None or alpha < best[0]:
+                best = (alpha, node, list(path))
+        for child in node["children"].values():
+            path.append(child)
+            best = find_weakest(child, path, best)
+            path.pop()
+        return best
+
+    build_stats(model.tree_)
+    while True:
+        weakest = find_weakest(model.tree_, [model.tree_], None)
+        if weakest is None or weakest[0] > ccp_alpha:
+            break
+        _, target, path = weakest
+        r_t, sr_t, leaves_t = target["_ccp"]
+        delta_risk = r_t - sr_t
+        delta_leaves = 1 - leaves_t
+        target.pop("feature")
+        target.pop("threshold")
+        target.pop("children")
+        target["_ccp"] = (r_t, r_t, 1)
+        for ancestor in path[:-1]:
+            ra, sra, la = ancestor["_ccp"]
+            ancestor["_ccp"] = (ra, sra + delta_risk, la + delta_leaves)
+
+    def cleanup(node):
+        node.pop("_ccp", None)
+        for child in node.get("children", {}).values():
+            cleanup(child)
+
+    cleanup(model.tree_)
+    return model
+
+
+if __name__ == "__main__":
+    from models.decision_tree import DecisionTreeID3
+
+    # Self-check: CCP accounts for residual samples left at parent when min_samples_leaf > 1.
+    X_ccp = np.array([["A"], ["A"], ["B"], ["B"], ["C"], ["D"]], dtype=object)
+    y_ccp = np.array([0, 0, 1, 1, 0, 1])
+    m1 = prune_cost_complexity(DecisionTreeID3(max_depth=3, min_samples_leaf=2).fit(X_ccp, y_ccp), 0.8)
+    assert "children" not in m1.tree_
+    m2 = prune_cost_complexity(DecisionTreeID3(max_depth=3, min_samples_leaf=2).fit(X_ccp, y_ccp), 0.2)
+    assert "children" in m2.tree_
+    print("Uji pruning (termasuk residual risk CCP) lolos")

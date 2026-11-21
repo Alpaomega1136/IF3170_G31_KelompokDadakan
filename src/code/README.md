@@ -1,6 +1,6 @@
 # Struktur kode
 
-- `models/`: implementasi DTL, SVM, dan pruning.
+- `models/`: implementasi from scratch untuk KNN, DTL (ID3 + pruning), Logistic Regression, SVM, dan Naive Bayes.
 - `preprocessing/`: pembersihan dan transformasi data.
 - `workflows/`: training, evaluasi, penyimpanan, submission, dan tuning DTL.
 - `analysis/`: fungsi eksplorasi dan visualisasi data.

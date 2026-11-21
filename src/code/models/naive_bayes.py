@@ -5,10 +5,11 @@ import numpy as np
 
 
 class NaiveBayes:
-    def __init__(self, categorical_features=None, m=None, var_smoothing=1e-9):
+    def __init__(self, categorical_features=None, m=None, var_smoothing=1e-9, threshold=None):
         self.categorical_features = categorical_features
         self.m = m
         self.var_smoothing = var_smoothing
+        self.threshold = threshold
     @staticmethod
     def _missing(value):
         return value is None or (isinstance(value, Real) and np.isnan(value))
@@ -49,9 +50,11 @@ class NaiveBayes:
 
         gaussian = [p for p, cat in zip(self.params_, self.is_categorical_) if not cat]
         if gaussian:
-            epsilon = self.var_smoothing * max(p["total_var"] for p in gaussian)
+            max_var = max(p["total_var"] for p in gaussian)
+            # Fall back to a positive variance floor when all Gaussian features are constant or all-missing.
+            epsilon = self.var_smoothing * max_var if max_var > 0 else max(self.var_smoothing, 1e-12)
             for p in gaussian:
-                p["var"] = p["var"] + epsilon
+                p["var"] = np.maximum(p["var"] + epsilon, 1e-12)
         return self
 
     def _fit_categorical(self, column, y_encoded):
@@ -79,13 +82,15 @@ class NaiveBayes:
         x = column[~missing].astype(float)
         y_known = y_encoded[~missing]
         n_classes = len(self.classes_)
+        overall_mean = float(x.mean()) if len(x) else 0.0
+        overall_var = float(x.var()) if len(x) else 0.0
         mean = np.zeros(n_classes)
         var = np.zeros(n_classes)
         for c in range(n_classes):
             x_c = x[y_known == c]
-            mean[c] = x_c.mean()
-            var[c] = x_c.var()
-        return {"mean": mean, "var": var, "total_var": x.var()}
+            mean[c] = x_c.mean() if len(x_c) else overall_mean
+            var[c] = x_c.var() if len(x_c) else overall_var
+        return {"mean": mean, "var": var, "total_var": overall_var}
 
 
     def _joint_log_likelihood(self, X):
@@ -125,12 +130,13 @@ class NaiveBayes:
 
 
     def predict(self, X, threshold=None):
-        if threshold is None:
+        th = self.threshold if threshold is None else threshold
+        if th is None:
             return self.classes_[np.argmax(self._joint_log_likelihood(X), axis=1)]
-        if len(self.classes_) !=2:
+        if len(self.classes_) != 2:
             raise ValueError("threshold only works for binary classification")
         proba = self.predict_proba(X)[:, 1]
-        return np.where(proba >= threshold, self.classes_[1], self.classes_[0])
+        return np.where(proba >= th, self.classes_[1], self.classes_[0])
 
 
     def save(self, path):
@@ -179,4 +185,10 @@ if __name__ == "__main__":
     print("prediksi         :", model.predict(query)[0])
     assert np.allclose(jll, [0.0206, 0.0053], atol=1e-4)
     assert model.predict(query)[0] == "No"
-    print("Uji PlayTennis lolos")
+
+    # Self-checks: constant and all-missing Gaussian features must not produce NaN.
+    for col in [[[1.0], [1.0], [1.0], [1.0]], [[np.nan], [np.nan], [np.nan], [np.nan]]]:
+        arr = np.array(col, dtype=object)
+        probs = NaiveBayes(categorical_features=[]).fit(arr, np.array([0, 0, 1, 1])).predict_proba(arr)
+        assert np.isfinite(probs).all() and np.allclose(probs.sum(axis=1), 1.0)
+    print("Uji PlayTennis dan edge-case Gaussian lolos")

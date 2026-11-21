@@ -11,9 +11,29 @@ def train_model(model, X_train, y_train):
     return model
 
 
+def calibrate_threshold(y_true, scores, grid=None):
+    """Select the binary threshold maximizing Macro F1 on a calibration split."""
+    y_true = np.asarray(y_true)
+    scores = np.asarray(scores)
+    if grid is None:
+        grid = np.linspace(0.25, 0.65, 81)
+    best_th, best_f1 = float(grid[0]), -1.0
+    for th in grid:
+        score = f1_score(y_true, (scores >= th).astype(int), average="macro", labels=[0, 1], zero_division=0)
+        if score > best_f1:
+            best_f1, best_th = float(score), float(th)
+    return best_th, best_f1
+
+
 def evaluate_model(model, X_valid, y_valid, threshold=None):
-    prediction = (model.predict(X_valid) if threshold is None else
-                  (model.decision_function(X_valid) >= threshold).astype(int))
+    if threshold is None:
+        prediction = model.predict(X_valid)
+    elif hasattr(model, "predict_proba"):
+        proba = model.predict_proba(X_valid)
+        scores = proba[:, 1] if proba.ndim == 2 else proba
+        prediction = (scores >= threshold).astype(int)
+    else:
+        prediction = (model.decision_function(X_valid) >= threshold).astype(int)
     scores = pd.Series({
         "accuracy": accuracy_score(y_valid, prediction),
         "precision_kelas_1": precision_score(y_valid, prediction, zero_division=0),

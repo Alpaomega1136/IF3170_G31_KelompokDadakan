@@ -1,4 +1,4 @@
-﻿"""Binary kernel SVM trained with a NumPy-only dual working-set optimizer.
+"""Binary kernel SVM trained with a NumPy-only dual working-set optimizer.
 
 The pair selection follows the second-order working-set idea of Fan, Chen and
 Lin (2005), JMLR 6:1889-1918. Kernel rows are computed lazily and cached;
@@ -125,6 +125,8 @@ class WorkingSetSVM:
         X = np.asarray(X, dtype=np.float64)
         if X.ndim != 2 or X.shape[1] != self.n_features_in_ or not np.isfinite(X).all():
             raise ValueError("X must be finite and have the fitted feature count")
+        if len(X) == 0:
+            return np.empty(0, dtype=np.float64)
         return np.concatenate([self._kernel(X[i:i+batch_size], self.support_vectors_) @ self.dual_coef_
                                + self.intercept_ for i in range(0, len(X), batch_size)])
 
