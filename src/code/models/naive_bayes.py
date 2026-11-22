@@ -17,7 +17,7 @@ class NaiveBayes:
     def _missing_mask(self, column):
         return np.fromiter((self._missing(v) for v in column), bool, len(column))
 
-    # fit
+    
     def fit(self, X, y):
         self.feature_names_= list(X.columns) if hasattr(X, "columns") else None
         X = np.asarray(X,dtype=object)
@@ -51,7 +51,7 @@ class NaiveBayes:
         gaussian = [p for p, cat in zip(self.params_, self.is_categorical_) if not cat]
         if gaussian:
             max_var = max(p["total_var"] for p in gaussian)
-            # Fall back to a positive variance floor when all Gaussian features are constant or all-missing.
+            # Jaga variansi tetap positif saat fitur konstan atau seluruhnya kosong.
             epsilon = self.var_smoothing * max_var if max_var > 0 else max(self.var_smoothing, 1e-12)
             for p in gaussian:
                 p["var"] = np.maximum(p["var"] + epsilon, 1e-12)
@@ -186,7 +186,7 @@ if __name__ == "__main__":
     assert np.allclose(jll, [0.0206, 0.0053], atol=1e-4)
     assert model.predict(query)[0] == "No"
 
-    # Self-checks: constant and all-missing Gaussian features must not produce NaN.
+    # Uji fitur Gaussian yang konstan dan seluruhnya kosong.
     for col in [[[1.0], [1.0], [1.0], [1.0]], [[np.nan], [np.nan], [np.nan], [np.nan]]]:
         arr = np.array(col, dtype=object)
         probs = NaiveBayes(categorical_features=[]).fit(arr, np.array([0, 0, 1, 1])).predict_proba(arr)

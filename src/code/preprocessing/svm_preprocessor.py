@@ -1,24 +1,12 @@
-"""Train-only SVM preprocessing, using NumPy and pandas.
-
-Continuous mutual information can be estimated by quantile binning, or by
-the k-nearest-neighbour estimator of Ross (2014), PLOS ONE 9(2), e87357:
-https://doi.org/10.1371/journal.pone.0087357. Discrete mutual information is
-computed from empirical joint frequencies. SciPy supplies spatial search and
-the digamma function; no library ML estimator is used for this transformer.
-"""
+# Estimasi mutual information kontinu: Ross (2014), https://doi.org/10.1371/journal.pone.0087357.
 import numpy as np
 import pandas as pd
 from scipy.spatial import cKDTree
 from scipy.special import digamma
 
 
-class SafeSVMPreprocessor:
-    """Impute, scale numeric columns, one-hot encode categories, and weight MI.
-
-    All imputation values, categories, scaling parameters, bin edges and
-    weights are derived exclusively from X and y passed to fit. Unknown
-    categories at transform time are encoded as all zeros.
-    """
+class SVMPreprocessor:
+    # Statistik dan bobot fitur dipelajari hanya dari data training.
 
     def __init__(self, exponent=0.5, min_score=0.002, n_bins=10,
                  estimator="quantile", n_neighbors=5, random_state=42):
@@ -58,7 +46,7 @@ class SafeSVMPreprocessor:
         for column in self.categorical_:
             values = X[column].astype("string")
             counts = values.value_counts(dropna=True)
-            # Sorted tie break prevents order-dependent modes.
+            # Urutkan modus yang sama frekuensinya agar hasil konsisten.
             mode = sorted(counts[counts == counts.max()].index.tolist())[0] if len(counts) else ""
             self.modes_[column] = mode
             self.categories_[column] = sorted(values.fillna(mode).unique().tolist())
@@ -66,7 +54,7 @@ class SafeSVMPreprocessor:
         matrix = self._base_transform(X)
         unique_counts = np.array([np.unique(matrix[:, i]).size for i in range(matrix.shape[1])])
         continuous_indices = np.flatnonzero(unique_counts >= 20)
-        # Fixed noise removes distance ties, using training data only.
+        # Tambahkan derau kecil agar jarak yang sama dapat dibedakan.
         continuous_values = matrix[:, continuous_indices].copy()
         if continuous_values.shape[1] and self.estimator == "knn":
             scales = np.std(continuous_values, axis=0)
@@ -107,8 +95,8 @@ class SafeSVMPreprocessor:
         return self
 
     def _continuous_mi(self, values, labels):
-        # For each point, find its kth neighbour in the same class, then count
-        # every point in that strictly smaller radius across all classes.
+        # Hitung tetangga dalam radius tetangga kelas yang sama.
+        
         eligible = np.zeros(len(values), dtype=bool)
         radius = np.zeros(len(values))
         label_count = np.zeros(len(values), dtype=int)

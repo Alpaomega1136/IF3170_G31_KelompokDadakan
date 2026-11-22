@@ -43,7 +43,7 @@ def prune_reduced_error(model, X, y):
 
 
 def prune_macro_f1(model, X, y):
-    """Prune bottom-up without decreasing macro F1 on the pruning set."""
+    # Pangkas simpul tanpa menurunkan macro F1 pada data pruning.
     if model.tree_ is None:
         raise ValueError("Fit the model before pruning")
     X = np.asarray(X, dtype=object)
@@ -92,11 +92,7 @@ def prune_macro_f1(model, X, y):
 
 
 def prune_cost_complexity(model, ccp_alpha):
-    """Minimal cost-complexity pruning using stored node counts.
-
-    Reference: Breiman, L., Friedman, J., Olshen, R., & Stone, C. (1984).
-    Classification and Regression Trees. Wadsworth.
-    """
+    # Referensi: Breiman dkk. (1984), Classification and Regression Trees.
     if model.tree_ is None:
         raise ValueError("Fit the model before pruning")
     if ccp_alpha < 0:
@@ -112,7 +108,7 @@ def prune_cost_complexity(model, ccp_alpha):
         counts = node["counts"]
         return (float(counts.sum()) / total_n) * float(model._entropy(counts))
 
-    # Cache (risk, sub_risk, n_leaves) per node, including any residual samples that stay at the parent.
+    # Simpan risiko dan jumlah daun, termasuk data yang tetap di simpul induk.
     def build_stats(node):
         r = node_risk(node)
         if "children" not in node:
@@ -176,7 +172,7 @@ def prune_cost_complexity(model, ccp_alpha):
 if __name__ == "__main__":
     from models.decision_tree import DecisionTreeID3
 
-    # Self-check: CCP accounts for residual samples left at parent when min_samples_leaf > 1.
+    # Uji cost-complexity pruning untuk data yang tertahan di simpul induk.
     X_ccp = np.array([["A"], ["A"], ["B"], ["B"], ["C"], ["D"]], dtype=object)
     y_ccp = np.array([0, 0, 1, 1, 0, 1])
     m1 = prune_cost_complexity(DecisionTreeID3(max_depth=3, min_samples_leaf=2).fit(X_ccp, y_ccp), 0.8)

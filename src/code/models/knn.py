@@ -42,7 +42,7 @@ class KNNFromScratch:
             batch_sq = np.sum(X_batch ** 2, axis=1)[:, None]
             sq = np.maximum(batch_sq + self._train_sq_norm[None, :] - 2.0 * (X_batch @ self.X_train.T), 0.0)
             return np.sqrt(sq)
-        # Accumulate per feature using preallocated buffers for O(batch_size * n_train) memory.
+        # Gunakan buffer agar pemakaian memori tetap terbatas per batch.
         b = len(X_batch)
         Xt = getattr(self, '_X_train_T', None)
         if Xt is None:
@@ -80,7 +80,7 @@ class KNNFromScratch:
             rows = np.arange(end - start)[:, None]
             if k < n_train:
                 idx = np.argpartition(dist, k - 1, axis=1)[:, :k]
-                # Break boundary distance ties deterministically by smallest training index (matches stable argsort).
+                # Jika jarak sama, dahulukan indeks data training yang lebih kecil.
                 d_k = np.max(dist[rows, idx], axis=1, keepdims=True)
                 tied_rows = np.flatnonzero((dist <= d_k).sum(axis=1) > k)
                 for r in tied_rows:
@@ -128,13 +128,13 @@ class KNNFromScratch:
 
 
 if __name__ == "__main__":
-    # Self-check: deterministic tie-breaking matches stable argsort for Euclidean and Manhattan.
+    # Uji pemilihan tetangga dengan jarak yang sama.
     X_tie = np.array([[0.0, 0.0], [1.0, 0.0], [-1.0, 0.0], [0.0, 1.0], [0.0, -1.0]])
     y_tie = np.array([1, 1, 0, 0, 0])
     q = np.array([[0.0, 0.0]])
     for metric in ("euclidean", "manhattan"):
         m = KNNFromScratch(k=3, metric=metric, weights="uniform").fit(X_tie, y_tie)
-        # Closest are idx 0 (d=0, y=1), then tied d=1 at idx 1 (y=1), 2 (y=0), 3 (y=0), 4 (y=0).
-        # Lowest indices [0, 1, 2] give two 1s and one 0 -> prediction 1.
+        # Tetangga berjarak sama dipilih berdasarkan urutan indeks.
+        # Mayoritas label tetangga terpilih adalah kelas satu.
         assert m.predict(q)[0] == 1
     print("Uji KNNFromScratch (deterministic tie-break) lolos")

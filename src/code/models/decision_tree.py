@@ -63,7 +63,7 @@ class DecisionTreeID3:
             return node
 
         parent_entropy = self._entropy(counts)
-        # Allow zero-gain splits that strictly partition the data (e.g. XOR); termination holds since every child shrinks.
+        # Pemisahan tanpa gain tetap dipakai jika setiap cabang memperkecil data.
         best_gain = -1.0
         best_split = None
         for feature in features:
@@ -71,7 +71,7 @@ class DecisionTreeID3:
             missing = np.fromiter((self._missing(value) for value in column), bool, len(column))
             has_missing_branch = missing.any() and missing.sum() >= min_leaf
             missing_counts = np.bincount(y[missing], minlength=len(self.classes_))
-            # Rare missing rows (< min_leaf) fall back to the parent node instead of blocking the feature.
+            # Nilai kosong yang terlalu sedikit tetap berada di simpul induk.
             missing_entropy = (missing.sum() * self._entropy(missing_counts) if has_missing_branch
                                else missing.sum() * parent_entropy)
 
@@ -206,7 +206,7 @@ class DecisionTreeID3:
 
 
 if __name__ == "__main__":
-    # Self-checks: numeric & categorical XOR (zero-gain root), rare missing values with min_samples_leaf > 1.
+    # Uji XOR dan nilai kosong dengan batas minimum daun.
     X_xor = np.array([[0, 0], [0, 1], [1, 0], [1, 1]], dtype=float)
     y_xor = np.array([0, 1, 1, 0])
     assert np.array_equal(DecisionTreeID3(max_depth=3).fit(X_xor, y_xor).predict(X_xor), y_xor)

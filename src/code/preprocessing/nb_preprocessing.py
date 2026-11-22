@@ -3,13 +3,7 @@ import pandas as pd
 
 
 class NaiveBayesPreprocessor:
-    """Prepare features for Naive Bayes using training-only statistics.
-
-    When discretize=True, skewed continuous features are binned via training
-    quantiles, missing values become an explicit category (capturing MNAR
-    signals such as special_requests), arrival_year and arrival_month are
-    combined into year_month, and redundant is_returning_guest is dropped.
-    """
+    # Batas diskritisasi dipelajari hanya dari data training.
 
     def __init__(self, discretize=True, n_bins=15):
         if n_bins < 2:

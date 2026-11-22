@@ -12,7 +12,7 @@ def train_model(model, X_train, y_train):
 
 
 def calibrate_threshold(y_true, scores, grid=None):
-    """Select the binary threshold maximizing Macro F1 on a calibration split."""
+    # Pilih threshold dengan macro F1 tertinggi pada data kalibrasi.
     y_true = np.asarray(y_true)
     scores = np.asarray(scores)
     if grid is None:

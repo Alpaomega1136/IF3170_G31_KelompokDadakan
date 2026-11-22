@@ -7,7 +7,7 @@ from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
 
 def impute(X_train, X_valid, X_test):
-    """Fill missing values using statistics fitted on training data."""
+    # Isi nilai kosong berdasarkan statistik data training.
     if not X_train.columns.equals(X_valid.columns) or not X_train.columns.equals(X_test.columns):
         raise ValueError("Kolom training, validasi, dan test harus sama")
     frames = [frame.copy() for frame in (X_train, X_valid, X_test)]
@@ -28,7 +28,7 @@ def impute(X_train, X_valid, X_test):
 
 
 def encode(X_train, X_valid, X_test):
-    """One-hot encode categories using only training categories."""
+    # Pelajari kategori hanya dari data training.
     categorical = X_train.select_dtypes(exclude="number").columns.tolist()
     if not categorical:
         return X_train.copy(), X_valid.copy(), X_test.copy(), None
@@ -44,7 +44,7 @@ def encode(X_train, X_valid, X_test):
 
 
 def scale(X_train, X_valid, X_test, columns):
-    """Standardize numeric columns using training statistics."""
+    # Pelajari parameter standardisasi hanya dari data training.
     frames = [frame.copy() for frame in (X_train, X_valid, X_test)]
     if len(columns) == 0:
         return frames[0], frames[1], frames[2], None
@@ -74,7 +74,7 @@ def create_preprocessor(data_train):
 
 
 class LRFeaturePreprocessor:
-    """Add domain nonlinearities for Logistic Regression, then impute/scale/encode on train only."""
+    # Bentuk fitur tambahan sebelum preprocessing Logistic Regression.
 
     @staticmethod
     def _augment(X):

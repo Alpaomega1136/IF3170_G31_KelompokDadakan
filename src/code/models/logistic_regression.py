@@ -38,7 +38,7 @@ class LogisticRegression:
         self.b = np.zeros(X.shape[1])
         rng = np.random.default_rng(self.random_state)
 
-        # Regularisation: Zou & Hastie (2005); soft-thresholding: Parikh & Boyd (2014); Friedman, Hastie & Tibshirani (2010)
+        # Referensi: Zou & Hastie (2005); Parikh & Boyd (2014); Friedman dkk. (2010).
         share_l1 = {None: 0.0, 'l1': 1.0, 'l2': 0.0, 'elasticnet': self.l1_ratio}[self.penalty]
         lam = 0.0 if self.penalty is None else self.lam
         l1, l2 = lam * share_l1, lam * (1 - share_l1)

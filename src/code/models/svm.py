@@ -1,9 +1,4 @@
-"""Binary kernel SVM trained with a NumPy-only dual working-set optimizer.
-
-The pair selection follows the second-order working-set idea of Fan, Chen and
-Lin (2005), JMLR 6:1889-1918. Kernel rows are computed lazily and cached;
-neither a library SVM solver nor a full Gram matrix is required.
-"""
+# Pemilihan working set mengacu pada Fan, Chen, dan Lin (2005), JMLR 6:1889-1918.
 from collections import OrderedDict
 import pickle
 import warnings
