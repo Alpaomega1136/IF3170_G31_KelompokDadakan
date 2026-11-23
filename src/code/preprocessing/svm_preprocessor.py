@@ -9,9 +9,11 @@ class SVMPreprocessor:
     # Statistik dan bobot fitur dipelajari hanya dari data training.
 
     def __init__(self, exponent=0.5, min_score=0.002, n_bins=10,
-                 estimator="quantile", n_neighbors=5, random_state=42):
+                 estimator="quantile", n_neighbors=5, random_state=42,
+                 categorical_mi="dummy"):
         if (exponent < 0 or min_score <= 0 or n_bins < 2 or n_neighbors < 1
-                or estimator not in ("quantile", "knn")):
+                or estimator not in ("quantile", "knn")
+                or categorical_mi not in ("dummy", "group")):
             raise ValueError("Invalid MI preprocessing configuration")
         self.exponent = exponent
         self.min_score = min_score
@@ -19,6 +21,7 @@ class SVMPreprocessor:
         self.estimator = estimator
         self.n_neighbors = int(n_neighbors)
         self.random_state = random_state
+        self.categorical_mi = categorical_mi
 
     def fit(self, X, y):
         if not isinstance(X, pd.DataFrame) or X.columns.has_duplicates or X.shape[1] == 0:
@@ -86,7 +89,25 @@ class SVMPreprocessor:
             scores.append(float(np.sum(joint[nz] * np.log(joint[nz] / independent[nz]))))
             edges.append(bins)
         self.bin_edges_ = edges
-        self.scores_ = np.maximum(np.array(scores), 0)
+        scores_arr = np.maximum(np.array(scores, dtype=float), 0.0)
+        if getattr(self, "categorical_mi", "dummy") == "group":
+            # Gunakan MI tingkat kolom agar fitur kategori multi-nilai tidak terdilusi one-hot.
+            col_ptr = len(self.numeric_)
+            n_classes = int(np.max(y_codes)) + 1
+            for column in self.categorical_:
+                n_cat = len(self.categories_[column])
+                vals = X[column].astype("string").fillna(self.modes_[column]).to_numpy(dtype=str)
+                _, codes = np.unique(vals, return_inverse=True)
+                n_codes = int(np.max(codes)) + 1
+                counts = np.bincount(codes * n_classes + y_codes,
+                                     minlength=n_codes * n_classes).reshape(n_codes, n_classes)
+                joint = counts / len(y)
+                independent = joint.sum(axis=1, keepdims=True) * joint.sum(axis=0, keepdims=True)
+                nz = joint > 0
+                group_mi = float(max(0.0, np.sum(joint[nz] * np.log(joint[nz] / independent[nz]))))
+                scores_arr[col_ptr:col_ptr + n_cat] = group_mi
+                col_ptr += n_cat
+        self.scores_ = scores_arr
         mean_score = float(np.mean(self.scores_))
         self.weights_ = ((np.maximum(self.scores_, self.min_score) / mean_score) ** self.exponent
                          if mean_score > 0 else np.ones(matrix.shape[1]))
@@ -141,3 +162,16 @@ class SVMPreprocessor:
 
     def fit_transform(self, X, y):
         return self.fit(X, y).transform(X)
+
+
+if __name__ == "__main__":
+    # Uji pembobotan MI kategori tingkat grup agar semua indikator satu kolom berbobot sama.
+    df_uji = pd.DataFrame({
+        "angka": [1.0, 2.0, 3.0, 4.0, 5.0, 6.0],
+        "grup": ["A", "A", "B", "B", "C", "C"],
+    })
+    y_uji = np.array([0, 0, 1, 1, 1, 0])
+    p_grp = SVMPreprocessor(categorical_mi="group").fit(df_uji, y_uji)
+    assert np.allclose(p_grp.scores_[1:], p_grp.scores_[1])
+    assert p_grp.transform(df_uji).shape == (6, 4)
+    print("Uji SVMPreprocessor (categorical_mi='group') lolos")
