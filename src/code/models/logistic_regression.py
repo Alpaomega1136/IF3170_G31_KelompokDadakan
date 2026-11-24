@@ -24,7 +24,7 @@ class LogisticRegression:
     def _add_bias(X):
         return np.c_[np.ones(len(X)), X]
 
-    def fit(self, X, y):
+    def fit(self, X, y, *, record_trajectory=False):
         X, y = np.asarray(X, float), np.asarray(y, float)
         if X.ndim != 2 or y.ndim != 1 or len(X) != len(y) or len(y) == 0:
             raise ValueError("X must be 2D and not empty and y must match the number of rows in X")
@@ -36,6 +36,7 @@ class LogisticRegression:
         X = self._add_bias(X)
         n = len(X)
         self.b = np.zeros(X.shape[1])
+        self.trajectory_ = [self.b.copy()] if record_trajectory else []
         rng = np.random.default_rng(self.random_state)
 
         # Referensi: Zou & Hastie (2005); Parikh & Boyd (2014); Friedman dkk. (2010).
@@ -60,6 +61,8 @@ class LogisticRegression:
             nll = -np.mean(y * np.log(p_all) + (1 - y) * np.log(1 - p_all))
             reg = 0.5 * l2 * np.sum(self.b[1:] ** 2) + l1 * np.sum(np.abs(self.b[1:]))
             self.loss_history_.append(float(nll + reg))
+            if record_trajectory:
+                self.trajectory_.append(self.b.copy())
             if len(self.loss_history_) > 1 and abs(self.loss_history_[-2] - self.loss_history_[-1]) < self.tol:
                 break
         return self

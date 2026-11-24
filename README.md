@@ -2,17 +2,17 @@
 
 **Kelompok 31 - Kelompok Dadakan**
 
-Proyek ini memprediksi apakah pemesanan penginapan akan dibatalkan berdasarkan informasi tamu, pemesanan, dan riwayatnya. Target `is_canceled` bernilai `1` untuk pemesanan yang dibatalkan dan `0` untuk yang tidak dibatalkan.
+Program melakukan prediksi apakah pemesanan penginapan akan dibatalkan berdasarkan informasi tamu, pemesanan, dan riwayatnya. Target `is_canceled` bernilai `1` untuk pemesanan yang dibatalkan dan `0` untuk yang tidak dibatalkan.
 
-## Anggota
+## Anggota dan pembagian tugas
 
-| Nama | NIM |
-| --- | --- |
-| Farrel Limjaya | 13524046 |
-| Raymond Jonathan Dwi Putra Julianto | 13524059 |
-| Reynard Anderson Wijaya | 13524111 |
-| Fauzan Mohamad Abdul Ghani | 13524113 |
-| Hasna Nurul Alimah | 11424061 |
+| Nama | NIM | Pembagian tugas |
+| --- | --- | --- |
+| Farrell Limjaya | 13524046 | Mengimplementasikan model SVM dan preprocessing untuk KNN dan SVM. Membuat visualisasi bonus SVM. |
+| Raymond Jonathan Dwi Putra Julianto | 13524059 | Mengimplementasikan model DTL, preprocessing DTL, dan preprocessing umum. Mengerjakan bagian *Understanding Data* serta bonus visualisasi DTL dan *cost-sensitive classification*. |
+| Reynard Anderson Wijaya | 13524111 | Mengimplementasikan model dan preprocessing Logistic Regression. Membuat visualisasi bonus Logistic Regression. |
+| Fauzan Mohamad Abdul Ghani | 13524113 | Mengimplementasikan model dan preprocessing Naive Bayes. Membuat visualisasi bonus Naive Bayes. |
+| Hasna Nurul Alimah | 11424061 | Mengimplementasikan model KNN dan preprocessing untuk KNN dan SVM. Membuat algoritma optimasi KNN. |
 
 ## Struktur proyek
 
@@ -75,3 +75,5 @@ Kinerja dievaluasi menggunakan **Macro F1**, akurasi, F1 setiap kelas, dan confu
 ## Keluaran
 
 Hasil setiap model disimpan dalam foldernya masing-masing di `output/`. Contohnya, folder `output/SVM/` berisi model, preprocessor, dan `submission_svm.csv`. File pickle digunakan untuk menyimpan model dan preprocessor agar dapat dimuat kembali dari lingkungan Python yang sesuai.
+
+Bagian **Bonus** pada notebook menghasilkan gambar pohon DTL, visualisasi SVM, graf Naive Bayes, dan video kontur Logistic Regression di folder `output/bonus/`. Pembuatan video MP4 memerlukan FFmpeg yang tersedia pada `PATH`.

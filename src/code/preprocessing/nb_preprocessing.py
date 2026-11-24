@@ -64,7 +64,7 @@ class NaiveBayesPreprocessor:
             df["nightly_rate_idr"].isna(), "NA",
             np.where(df["nightly_rate_idr"] == 0, "0", "pos")
         )
-        out["total_nights_zero"] = ((df["weekend_nights"] + df["weekday_nights"]) == 0).astype(str)
+        out["total_nights_zero"] = (df["weekend_nights"].eq(0) & df["weekday_nights"].eq(0)).astype(str)
 
         for col, edges in self.bin_edges_.items():
             v = df[col]

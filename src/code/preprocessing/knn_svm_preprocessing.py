@@ -5,7 +5,7 @@ from scipy.spatial import cKDTree
 from scipy.special import digamma
 
 
-class SVMPreprocessor:
+class KNNSVMPreprocessor:
     # Statistik dan bobot fitur dipelajari hanya dari data training.
 
     def __init__(self, exponent=0.5, min_score=0.002, n_bins=10,
@@ -171,7 +171,7 @@ if __name__ == "__main__":
         "grup": ["A", "A", "B", "B", "C", "C"],
     })
     y_uji = np.array([0, 0, 1, 1, 1, 0])
-    p_grp = SVMPreprocessor(categorical_mi="group").fit(df_uji, y_uji)
+    p_grp = KNNSVMPreprocessor(categorical_mi="group").fit(df_uji, y_uji)
     assert np.allclose(p_grp.scores_[1:], p_grp.scores_[1])
     assert p_grp.transform(df_uji).shape == (6, 4)
-    print("Uji SVMPreprocessor (categorical_mi='group') lolos")
+    print("Uji KNNSVMPreprocessor (categorical_mi='group') lolos")

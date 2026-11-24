@@ -3,7 +3,7 @@ from sklearn.model_selection import train_test_split
 
 from models.decision_tree import DecisionTreeID3
 from models.pruning import prune_cost_complexity
-from preprocessing.preprocessing import create_preprocessor
+from preprocessing.dtl_preprocessing import create_dtl_preprocessor
 from workflows.workflow import calibrate_threshold
 
 
@@ -14,7 +14,7 @@ def train_dtl(X_train, y_train, max_depth=None, min_samples_split=10,
         X_fit, X_calibration, y_fit, y_calibration = train_test_split(
             X_train, y_train, test_size=0.2, random_state=seed, stratify=y_train
         )
-        preprocessor_calibration = create_preprocessor(X_fit)
+        preprocessor_calibration = create_dtl_preprocessor(X_fit)
         model_calibration = DecisionTreeID3(
             max_depth=max_depth, min_samples_split=min_samples_split
         ).fit(preprocessor_calibration.fit_transform(X_fit), y_fit)
@@ -26,7 +26,7 @@ def train_dtl(X_train, y_train, max_depth=None, min_samples_split=10,
             np.linspace(0.30, 0.60, 61),
         )
 
-    preprocessor = create_preprocessor(X_train)
+    preprocessor = create_dtl_preprocessor(X_train)
     model = DecisionTreeID3(
         max_depth=max_depth, min_samples_split=min_samples_split, threshold=threshold
     ).fit(preprocessor.fit_transform(X_train), y_train)
